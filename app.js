@@ -59,7 +59,7 @@ app.get('/register', async (req, res) => {
                 </br>
                 <label for="email">Email</label>
                 </br>
-                <input type="email" name="email" id="enail">
+                <input type="email" name="email" id="email">
                 </br>
                 <label for="email">Contraseña</label>
                 </br>
