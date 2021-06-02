@@ -55,15 +55,15 @@ app.get('/register', async (req, res) => {
     res.send(`<form action="/register" method="post">
                 <label for="name">Nombre</label>
                 </br>
-                <input type="text" name="name">
+                <input type="text" name="name" id="name">
                 </br>
                 <label for="email">Email</label>
                 </br>
-                <input type="email" name="email">
+                <input type="email" name="email" id="enail">
                 </br>
                 <label for="email">Contraseña</label>
                 </br>
-                <input type="password" name="password">
+                <input type="password" name="password" id="password">
                 </br>
                 <button type="submit">Enviar</button>
             </form>`);     
