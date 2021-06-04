@@ -55,7 +55,7 @@ app.use(
     const user = await UserModel.authenticate(email, password);
 
     if(user){
-    // req.session.userId = user._id;
+        req.session.userId = user._id;
         res.redirect('/');
     }
     res.redirect('/login');                       
@@ -93,8 +93,9 @@ app.post('/register', async (req, res) => {
     res.redirect('/');   
 });
 
-app.get('/', async (req, res) => {   
-    
+app.get('/', async (req, res) => {    
+
+   console.log(req.session.userId);
     if (req.session.userId){
         UserModel.find({}, function(error, result){
             if (error) return console.error(error);
