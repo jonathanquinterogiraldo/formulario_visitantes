@@ -93,34 +93,38 @@ app.post('/register', async (req, res) => {
     res.redirect('/');   
 });
 
-app.get('/', async (req, res) => {          
-
-    UserModel.find({}, function(error, result){
-        if (error) return console.error(error);
-        console.log(result);
-        let str= '';
-        
-        for (const users of result) { 
-            console.log('users',users);
-            str = str +`<tr>                        
-                        <td>${users.name}</td>
-                        <td>${users.email}</td>
-                        </tr>`;                                             
-        };    
-
-        res.send(`<a href="/logout">Salir</a>
-                <table>
-                    <thead>
-                        <tr>                    
-                            <th>Nombre</th>
-                            <th>Email</th>
-                        </tr>
-                    </thead>
-                    <tbody>               
-                        ${str}               
-                    </tbody>               
-                </table>`);                
-    });       
+app.get('/', async (req, res) => {   
+    
+    if (req.session.userId){
+        UserModel.find({}, function(error, result){
+            if (error) return console.error(error);
+            console.log(result);
+            let str= '';
+            
+            for (const users of result) { 
+                console.log('users',users);
+                str = str +`<tr>                        
+                            <td>${users.name}</td>
+                            <td>${users.email}</td>
+                            </tr>`;                                             
+            };    
+    
+            res.send(`<a href="/logout">Salir</a>
+                    <table>
+                        <thead>
+                            <tr>                    
+                                <th>Nombre</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>               
+                            ${str}               
+                        </tbody>               
+                    </table>`);                
+        });       
+    }else{
+        res.redirect('/login');     
+    }    
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
