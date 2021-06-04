@@ -1,10 +1,14 @@
 const express = require('express');
-const app = express(); 
-app.use(express.urlencoded({ extended: true }));
-const port = 3000;  
-
 const mongoose = require("mongoose");
+const bcrypt = require('bcrypt');
+const path = require("path");
+const cookieSession = require('cookie-session');
+  
+//Express
+const app = express(); 
+const port = 3000;
 
+//Mongo
 mongoose.connect(process.env.MONGODB_URL || 'mongodb://localhost:27017/newdatabase', { 
     useNewUrlParser: true ,
     useUnifiedTopology: true
@@ -13,16 +17,83 @@ mongoose.connect(process.env.MONGODB_URL || 'mongodb://localhost:27017/newdataba
 mongoose.connection.on("error", (error) => console.log(error));
 mongoose.connection.once("open", () => console.log("Mongoose conectado"));
 
-const usersSchema = mongoose.Schema({      
+const UserSchema = mongoose.Schema({      
     name: String,  
     email: String,
-    password: String,
-    count: Number      
+    password: String,           
 });
 
-const UserModel = mongoose.model("User", usersSchema);
+UserSchema.statics.authenticate = async function(email, password)  {
+    const user = await this.model("User").findOne({ email: email})
 
-app.get('/', async (req, res) => {    
+    if(user){        
+        const match = await bcrypt.compare(password, user.password);
+        return match ? user : null;
+    }
+    return false;
+};
+
+const UserModel = mongoose.model("User", UserSchema);
+
+//Routes
+
+app.use(
+    cookieSession({
+      secret: "make-it-real",
+      maxAge: 5 * 60 * 1000,
+    })
+  );
+
+  app.use(express.urlencoded({ extended: true }));
+
+  app.use("/", express.static(path.join(__dirname, "public")));
+
+  app.post('/login', async (req, res) => {
+
+    const { email, password } = req.body;               
+    
+    const user = await UserModel.authenticate(email, password);
+
+    if(user){
+    // req.session.userId = user._id;
+        res.redirect('/');
+    }
+    res.redirect('/login');                       
+ });
+
+ app.get('/logout', (req, res) => {     
+    req.session.userId = null;
+    res.redirect('/login')
+});
+
+app.post('/register', async (req, res) => {   
+    
+    const { name, email, password} = req.body;
+
+    const user = new UserModel({  
+        name,  
+        email, 
+        password: await bcrypt.hash(password, 10)                                                
+    });
+    
+     user.save(async (error) => {
+        if (error) {
+            console.log(error);
+            return;
+        }
+        console.log("Visit created");           
+    });    
+
+    const userData = await UserModel.authenticate(email, password);
+
+    if (user) {
+      req.session.userId = userData._id;
+    }
+
+    res.redirect('/');   
+});
+
+app.get('/', async (req, res) => {          
 
     UserModel.find({}, function(error, result){
         if (error) return console.error(error);
@@ -37,54 +108,19 @@ app.get('/', async (req, res) => {
                         </tr>`;                                             
         };    
 
-        res.send(`<table>
-            <thead>
-                <tr>                    
-                    <th>Nombre</th>
-                    <th>Email</th>
-                </tr>
-            </thead>
-            <tbody>               
-                ${str}               
-            </tbody>               
-        </table>`);                
+        res.send(`<a href="/logout">Salir</a>
+                <table>
+                    <thead>
+                        <tr>                    
+                            <th>Nombre</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>               
+                        ${str}               
+                    </tbody>               
+                </table>`);                
     });       
-});
-
-app.get('/register', async (req, res) => {
-    res.send(`<form action="/register" method="post">
-                <label for="name">Nombre</label>
-                </br>
-                <input type="text" name="name" id="name">
-                </br>
-                <label for="email">Email</label>
-                </br>
-                <input type="email" name="email" id="email">
-                </br>
-                <label for="email">Contraseña</label>
-                </br>
-                <input type="password" name="password" id="password">
-                </br>
-                <button type="submit">Enviar</button>
-            </form>`);     
-});
-
-app.post('/register', async (req, res) => {       
-
-    const user = new UserModel({  
-         name: req.body.name,  
-         email: req.body.email, 
-         password: req.body.password                          
-    });
-  
-    await user.save((error) => {
-        if (error) {
-            console.log(error);
-            return;
-        }
-        console.log("Visit created"); 
-        res.redirect('/');   
-    });      
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
